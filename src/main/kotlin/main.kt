@@ -2,7 +2,9 @@ import Pattern.CIRCLES
 import Pattern.LINES
 import androidx.compose.desktop.LocalAppWindow
 import androidx.compose.desktop.Window
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Button
 import androidx.compose.material.Checkbox
@@ -29,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.IntSize
@@ -39,22 +43,50 @@ import java.awt.FileDialog
 import java.io.File
 import java.io.FilenameFilter
 
-enum class Pattern(val displatText: String) {
-    LINES("Lines"), CIRCLES("Circles")
+enum class Pattern(val displayText: String) {
+    LINES(displayText = "Lines"),
+    CIRCLES(displayText = "Circles"),
+}
+
+enum class Sort(val displayText: String) {
+    LIGHTNESS(displayText = "Lightness"),
+    HUE(displayText = "Hue"),
+    SATURATION(displayText = "Saturation"),
+    INTENSITY(displayText = "Intensity"),
+}
+
+enum class Interval(val displayText: String) {
+    LIGHTNESS(displayText = "Lightness"),
+    RANDOM(displayText = "Random"),
+    RANDOMFILE(displayText = "RandomFile"),
+    NONE(displayText = "None"),
 }
 
 fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
     var image by remember { mutableStateOf<File?>(null) }
     val window = LocalAppWindow.current
+
     var useAngle by remember { mutableStateOf(true) }
     var angle by remember { mutableStateOf(0) }
+
+    var reverseTheSort by remember { mutableStateOf(false) }
+
     var patternExpanded by remember { mutableStateOf(false) }
-    val patternItems = listOf(LINES, CIRCLES)
     var patternSelectedIndex by remember { mutableStateOf(0) }
 
-    fun pattern() = patternItems[patternSelectedIndex]
+    fun pattern() = Pattern.values()[patternSelectedIndex]
     fun lines() = pattern() == LINES
     fun circles() = pattern() == CIRCLES
+
+    var sortExpanded by remember { mutableStateOf(false) }
+    var sortSelectedIndex by remember { mutableStateOf(0) }
+
+    fun sort() = Sort.values()[sortSelectedIndex]
+
+    var intervalExpanded by remember { mutableStateOf(false) }
+    var intervalSelectedIndex by remember { mutableStateOf(0) }
+
+    fun interval() = Interval.values()[intervalSelectedIndex]
 
     MaterialTheme {
         Row(horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -85,45 +117,142 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
                     modifier = Modifier.padding(2.5.dp) then Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.SpaceEvenly,
                 ) {
-                    Row(
-                        modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
+                    Column(
+                        verticalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier.fillMaxWidth()
+                            .border(
+                                border = BorderStroke(width = 1.dp, color = Color.LightGray),
+                                shape = RoundedCornerShape(percent = 5),
+                            ),
                     ) {
                         Text(
-                            text = pattern().displatText,
-                            modifier = Modifier.clickable(onClick = { patternExpanded = true }),
+                            text = "Pattern",
+                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
                         )
-                        Icon(
-                            imageVector = Icons.Filled.ArrowDropDown,
-                            contentDescription = null,
-                            modifier = Modifier.clickable { patternExpanded = !patternExpanded }
-                        )
-                        DropdownMenu(
-                            expanded = patternExpanded,
-                            onDismissRequest = { patternExpanded = false }
+                        Row(
+                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
                         ) {
-                            patternItems.forEachIndexed { index, pattern ->
-                                DropdownMenuItem(
-                                    onClick = {
-                                        patternSelectedIndex = index
-                                        when (pattern()) {
-                                            LINES -> {
-                                                useAngle = true
+                            Text(
+                                text = pattern().displayText,
+                                modifier = Modifier.clickable(onClick = { patternExpanded = true }),
+                            )
+                            Icon(
+                                imageVector = Icons.Filled.ArrowDropDown,
+                                contentDescription = null,
+                                modifier = Modifier.clickable { patternExpanded = !patternExpanded }
+                            )
+                            DropdownMenu(
+                                expanded = patternExpanded,
+                                onDismissRequest = { patternExpanded = false }
+                            ) {
+                                Pattern.values().forEachIndexed { index, pattern ->
+                                    DropdownMenuItem(
+                                        onClick = {
+                                            patternSelectedIndex = index
+                                            useAngle = when (pattern) {
+                                                LINES -> true
+                                                CIRCLES -> false
                                             }
-                                            CIRCLES -> {
-                                                useAngle = false
-                                            }
+                                            patternExpanded = false
                                         }
-                                        patternExpanded = false
+                                    ) {
+                                        Text(text = pattern.displayText)
                                     }
-                                ) {
-                                    Text(text = pattern.displatText)
                                 }
                             }
                         }
                     }
                     Column(
-                        verticalArrangement = Arrangement.SpaceEvenly
+                        verticalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier.fillMaxWidth()
+                            .border(
+                                border = BorderStroke(width = 1.dp, color = Color.LightGray),
+                                shape = RoundedCornerShape(percent = 5),
+                            ),
+                    ) {
+                        Text(
+                            text = "Sort",
+                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
+                        )
+                        Row(
+                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                        ) {
+                            Text(
+                                text = sort().displayText,
+                                modifier = Modifier.clickable(onClick = { sortExpanded = true }),
+                            )
+                            Icon(
+                                imageVector = Icons.Filled.ArrowDropDown,
+                                contentDescription = null,
+                                modifier = Modifier.clickable { sortExpanded = !sortExpanded }
+                            )
+                            DropdownMenu(
+                                expanded = sortExpanded,
+                                onDismissRequest = { sortExpanded = false }
+                            ) {
+                                Sort.values().forEachIndexed { index, sort ->
+                                    DropdownMenuItem(
+                                        onClick = {
+                                            sortSelectedIndex = index
+                                            sortExpanded = false
+                                        }
+                                    ) {
+                                        Text(text = sort.displayText)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Column(
+                        verticalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier.fillMaxWidth()
+                            .border(
+                                border = BorderStroke(width = 1.dp, color = Color.LightGray),
+                                shape = RoundedCornerShape(percent = 5),
+                            ),
+                    ) {
+                        Text(
+                            text = "Interval",
+                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
+                        )
+                        Row(
+                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                        ) {
+                            Text(
+                                text = interval().displayText,
+                                modifier = Modifier.clickable(onClick = { intervalExpanded = true }),
+                            )
+                            Icon(
+                                imageVector = Icons.Filled.ArrowDropDown,
+                                contentDescription = null,
+                                modifier = Modifier.clickable { intervalExpanded = !intervalExpanded }
+                            )
+                            DropdownMenu(
+                                expanded = intervalExpanded,
+                                onDismissRequest = { intervalExpanded = false }
+                            ) {
+                                Interval.values().forEachIndexed { index, interval ->
+                                    DropdownMenuItem(
+                                        onClick = {
+                                            intervalSelectedIndex = index
+                                            intervalExpanded = false
+                                        }
+                                    ) {
+                                        Text(text = interval.displayText)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Column(
+                        verticalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier.border(
+                            border = BorderStroke(width = 1.dp, color = Color.LightGray),
+                            shape = RoundedCornerShape(percent = 5),
+                        ),
                     ) {
                         Row(
                             modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
@@ -154,12 +283,29 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
                         )
                         OutlinedTextField(
                             value = angle.toString(),
-                            onValueChange = { angle = it.toIntOrNull() ?: 0 },
+                            onValueChange = {
+                                val value = it.toIntOrNull() ?: 0
+                                if (value in 0..359) {
+                                    angle = value
+                                }
+                            },
                             singleLine = true,
                             modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            label = { Text(text = "Angle") },
                             enabled = useAngle,
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Checkbox(
+                            checked = reverseTheSort,
+                            onCheckedChange = { reverseTheSort = it },
+                        )
+                        Text(
+                            text = "Reverse the sort",
+                            modifier = Modifier.clickable(onClick = { reverseTheSort = !reverseTheSort }),
                         )
                     }
                     Button(modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
@@ -167,11 +313,18 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
                             val arguments = mutableListOf(
                                 it.absolutePath,
                                 "-p",
-                                pattern().displatText.toLowerCase(),
+                                pattern().displayText.toLowerCase(),
+                                "-s",
+                                sort().displayText.toLowerCase(),
+                                "-i",
+                                interval().displayText.toLowerCase(),
                             )
                             if (useAngle) {
                                 arguments.add("-a")
                                 arguments.add(angle.toString())
+                            }
+                            if (reverseTheSort) {
+                                arguments.add("-r")
                             }
                             shellRun(
                                 command = "pixel-sorter",
