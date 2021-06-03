@@ -1,3 +1,5 @@
+import Pattern.CIRCLES
+import Pattern.LINES
 import androidx.compose.desktop.LocalAppWindow
 import androidx.compose.desktop.Window
 import androidx.compose.foundation.Image
@@ -37,14 +39,23 @@ import java.awt.FileDialog
 import java.io.File
 import java.io.FilenameFilter
 
+enum class Pattern(val displatText: String) {
+    LINES("Lines"), CIRCLES("Circles")
+}
+
 fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
     var image by remember { mutableStateOf<File?>(null) }
     val window = LocalAppWindow.current
     var useAngle by remember { mutableStateOf(true) }
     var angle by remember { mutableStateOf(0) }
     var patternExpanded by remember { mutableStateOf(false) }
-    val patternItems = listOf("Lines", "Circles")
+    val patternItems = listOf(LINES, CIRCLES)
     var patternSelectedIndex by remember { mutableStateOf(0) }
+
+    fun pattern() = patternItems[patternSelectedIndex]
+    fun lines() = pattern() == LINES
+    fun circles() = pattern() == CIRCLES
+
     MaterialTheme {
         Row(horizontalArrangement = Arrangement.SpaceEvenly) {
             Column(
@@ -79,7 +90,7 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
                         horizontalArrangement = Arrangement.SpaceEvenly,
                     ) {
                         Text(
-                            text = patternItems[patternSelectedIndex],
+                            text = pattern().displatText,
                             modifier = Modifier.clickable(onClick = { patternExpanded = true }),
                         )
                         Icon(
@@ -95,10 +106,18 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
                                 DropdownMenuItem(
                                     onClick = {
                                         patternSelectedIndex = index
+                                        when (pattern()) {
+                                            LINES -> {
+                                                useAngle = true
+                                            }
+                                            CIRCLES -> {
+                                                useAngle = false
+                                            }
+                                        }
                                         patternExpanded = false
                                     }
                                 ) {
-                                    Text(text = pattern)
+                                    Text(text = pattern.displatText)
                                 }
                             }
                         }
@@ -108,15 +127,22 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
                     ) {
                         Row(
                             modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
-                            Checkbox(
-                                checked = useAngle,
-                                onCheckedChange = { useAngle = it },
-                            )
+                            if (circles()) {
+                                Checkbox(
+                                    checked = useAngle,
+                                    onCheckedChange = { useAngle = it },
+                                )
+                            }
+                            val textModifier = if (circles()) {
+                                Modifier.clickable(onClick = { useAngle = !useAngle })
+                            } else {
+                                Modifier
+                            }
                             Text(
                                 text = "Angle",
-                                modifier = Modifier.clickable(onClick = { useAngle = !useAngle }),
+                                modifier = textModifier,
                             )
                         }
                         Slider(
@@ -141,7 +167,7 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
                             val arguments = mutableListOf(
                                 it.absolutePath,
                                 "-p",
-                                patternItems[patternSelectedIndex].toLowerCase(),
+                                pattern().displatText.toLowerCase(),
                             )
                             if (useAngle) {
                                 arguments.add("-a")
