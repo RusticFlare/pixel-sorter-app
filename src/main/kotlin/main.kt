@@ -1,4 +1,5 @@
 import Interval.LIGHTNESS
+import Interval.RANDOM
 import Pattern.CIRCLES
 import Pattern.LINES
 import androidx.compose.desktop.LocalAppWindow
@@ -63,7 +64,7 @@ enum class Interval(val displayText: String) {
     NONE(displayText = "None"),
 }
 
-fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
+fun main() = Window(title = "Pixel Sorter", size = IntSize(width = 900, height = 900)) {
     var image by remember { mutableStateOf<File?>(null) }
     val window = LocalAppWindow.current
 
@@ -88,15 +89,20 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
 
     fun interval() = Interval.values()[intervalSelectedIndex]
     fun isLightness() = interval() == LIGHTNESS
+    fun isRandom() = interval() == RANDOM
 
     var lowerThreshold by remember { mutableStateOf(0.25f) }
     var upperThreshold by remember { mutableStateOf(0.8f) }
 
+    var averageWidth by remember { mutableStateOf(400) }
+
+    var centerX by remember { mutableStateOf(0) }
+    var centerY by remember { mutableStateOf(0) }
+
     MaterialTheme {
         Row(horizontalArrangement = Arrangement.SpaceEvenly) {
             Column(
-                modifier = Modifier.padding(2.5.dp) then Modifier.fillMaxHeight() then Modifier.fillMaxWidth(fraction = image?.let { 0.5f }
-                    ?: 1f),
+                modifier = Modifier.padding(2.5.dp).fillMaxHeight().fillMaxWidth(fraction = image?.let { 0.5f } ?: 1f),
                 verticalArrangement = Arrangement.SpaceEvenly,
             ) {
                 Button(modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
@@ -325,9 +331,7 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(fraction = 0.5f).padding(2.5.dp),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                label = {
-                                    Text(text = "Lower")
-                                }
+                                label = { Text(text = "Lower") }
                             )
                             OutlinedTextField(
                                 value = upperThreshold.toString(),
@@ -338,14 +342,60 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
                                     }
                                 },
                                 singleLine = true,
-                                modifier = Modifier.padding(2.5.dp),
+                                modifier = Modifier.fillMaxWidth().padding(2.5.dp),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                label = {
-                                    Text(text = "Upper")
-                                }
+                                label = { Text(text = "Upper") }
                             )
                         }
                     }
+                    if (isCircles()) Column(
+                        verticalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier.border(
+                            border = BorderStroke(width = 1.dp, color = Color.LightGray),
+                            shape = RoundedCornerShape(percent = 5),
+                        ),
+                    ) {
+                        Text(
+                            text = "Center",
+                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
+                        )
+                        Row(
+                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                        ) {
+                            OutlinedTextField(
+                                value = centerX.toString(),
+                                onValueChange = {
+                                    centerX = it.toIntOrNull() ?: 0
+                                },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(fraction = 0.5f).padding(2.5.dp),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                label = { Text(text = "X") }
+                            )
+                            OutlinedTextField(
+                                value = centerY.toString(),
+                                onValueChange = { centerY = it.toIntOrNull() ?: 0 },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth().padding(2.5.dp),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                label = { Text(text = "Y") }
+                            )
+                        }
+                    }
+                    if (isRandom()) OutlinedTextField(
+                        value = averageWidth.toString(),
+                        onValueChange = {
+                            val value = it.toIntOrNull() ?: 1
+                            if (value > 1) {
+                                averageWidth = value
+                            }
+                        },
+                        singleLine = true,
+                        modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        label = { Text(text = "Average Width") }
+                    )
                     Row(
                         modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -373,6 +423,11 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
                                 lowerThreshold.toString(),
                                 "-u",
                                 upperThreshold.toString(),
+                                "-w",
+                                averageWidth.toString(),
+                                "-c",
+                                centerX.toString(),
+                                centerY.toString(),
                             )
                             if (useAngle) {
                                 arguments.add("-a")
