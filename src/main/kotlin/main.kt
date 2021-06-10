@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -66,6 +67,7 @@ enum class Interval(val displayText: String) {
 
 fun main() = Window(title = "Pixel Sorter", size = IntSize(width = 900, height = 900)) {
     var image by remember { mutableStateOf<File?>(null) }
+    var mask by remember { mutableStateOf<File?>(null) }
     val window = LocalAppWindow.current
 
     var useAngle by remember { mutableStateOf(true) }
@@ -111,18 +113,18 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(width = 900, height =
                             isVisible = true
                             filenameFilter = FilenameFilter { _, name -> name.endsWith(".jpg") }
                         }.files.firstOrNull()
-                    }) {
-                    Text(text = image?.let { "Change File" } ?: "Open File")
-                }
-                image?.let {
+                    },
+                    content = { Text(text = image?.let { "Change File" } ?: "Open File") }
+                )
+                image?.run {
                     Image(
                         modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
-                        bitmap = it.imageBitmap(),
+                        bitmap = imageBitmap(),
                         contentDescription = null,
                     )
                 }
             }
-            image?.let {
+            image?.let { file ->
                 Column(
                     modifier = Modifier.padding(2.5.dp) then Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.SpaceEvenly,
@@ -400,6 +402,35 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(width = 900, height =
                         modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
+                        mask?.run {
+                            Image(
+                                modifier = Modifier.height(40.dp).padding(2.5.dp),
+                                bitmap = imageBitmap(),
+                                contentDescription = null,
+                            )
+                        }
+                        Button(
+                            modifier = Modifier.padding(2.5.dp),
+                            onClick = {
+                                mask = FileDialog(window.window).apply {
+                                    isVisible = true
+                                    filenameFilter = FilenameFilter { _, name -> name.endsWith(".jpg") }
+                                }.files.firstOrNull()
+                            },
+                            content = { Text(text = mask?.let { "Change Mask" } ?: "Select Mask") }
+                        )
+                        mask?.run {
+                            Button(
+                                modifier = Modifier.padding(2.5.dp),
+                                onClick = { mask = null },
+                                content = { Text(text = "Remove Mask") },
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
                         Checkbox(
                             checked = reverseTheSort,
                             onCheckedChange = { reverseTheSort = it },
@@ -409,10 +440,11 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(width = 900, height =
                             modifier = Modifier.clickable(onClick = { reverseTheSort = !reverseTheSort }),
                         )
                     }
-                    Button(modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
+                    Button(
+                        modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
                         onClick = {
                             val arguments = mutableListOf(
-                                it.absolutePath,
+                                file.absolutePath,
                                 "-p",
                                 pattern().displayText.toLowerCase(),
                                 "-s",
@@ -436,13 +468,17 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(width = 900, height =
                             if (reverseTheSort) {
                                 arguments.add("-r")
                             }
+                            mask?.run {
+                                arguments.add("-m")
+                                arguments.add(absolutePath)
+                            }
                             shellRun(
                                 command = "pixel-sorter",
                                 arguments = arguments
                             )
-                        }) {
-                        Text(text = "Run")
-                    }
+                        },
+                        content = { Text(text = "Run") },
+                    )
                 }
             }
         }
