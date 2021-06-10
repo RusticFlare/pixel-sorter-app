@@ -1,3 +1,4 @@
+import Interval.LIGHTNESS
 import Pattern.CIRCLES
 import Pattern.LINES
 import androidx.compose.desktop.LocalAppWindow
@@ -75,8 +76,7 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
     var patternSelectedIndex by remember { mutableStateOf(0) }
 
     fun pattern() = Pattern.values()[patternSelectedIndex]
-    fun lines() = pattern() == LINES
-    fun circles() = pattern() == CIRCLES
+    fun isCircles() = pattern() == CIRCLES
 
     var sortExpanded by remember { mutableStateOf(false) }
     var sortSelectedIndex by remember { mutableStateOf(0) }
@@ -87,6 +87,10 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
     var intervalSelectedIndex by remember { mutableStateOf(0) }
 
     fun interval() = Interval.values()[intervalSelectedIndex]
+    fun isLightness() = interval() == LIGHTNESS
+
+    var lowerThreshold by remember { mutableStateOf(0.25f) }
+    var upperThreshold by remember { mutableStateOf(0.8f) }
 
     MaterialTheme {
         Row(horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -258,13 +262,13 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
                             modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
-                            if (circles()) {
+                            if (isCircles()) {
                                 Checkbox(
                                     checked = useAngle,
                                     onCheckedChange = { useAngle = it },
                                 )
                             }
-                            val textModifier = if (circles()) {
+                            val textModifier = if (isCircles()) {
                                 Modifier.clickable(onClick = { useAngle = !useAngle })
                             } else {
                                 Modifier
@@ -295,6 +299,53 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
                             enabled = useAngle,
                         )
                     }
+                    if (isLightness()) Column(
+                        verticalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier.border(
+                            border = BorderStroke(width = 1.dp, color = Color.LightGray),
+                            shape = RoundedCornerShape(percent = 5),
+                        ),
+                    ) {
+                        Text(
+                            text = "Threshold",
+                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
+                        )
+                        Row(
+                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                        ) {
+                            OutlinedTextField(
+                                value = lowerThreshold.toString(),
+                                onValueChange = {
+                                    val value = it.toFloatOrNull() ?: 0f
+                                    if (value in 0f..1f) {
+                                        lowerThreshold = value
+                                    }
+                                },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(fraction = 0.5f).padding(2.5.dp),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                label = {
+                                    Text(text = "Lower")
+                                }
+                            )
+                            OutlinedTextField(
+                                value = upperThreshold.toString(),
+                                onValueChange = {
+                                    val value = it.toFloatOrNull() ?: 0f
+                                    if (value in 0f..1f) {
+                                        upperThreshold = value
+                                    }
+                                },
+                                singleLine = true,
+                                modifier = Modifier.padding(2.5.dp),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                label = {
+                                    Text(text = "Upper")
+                                }
+                            )
+                        }
+                    }
                     Row(
                         modifier = Modifier.align(Alignment.CenterHorizontally).padding(2.5.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -318,6 +369,10 @@ fun main() = Window(title = "Pixel Sorter", size = IntSize(900, 900)) {
                                 sort().displayText.toLowerCase(),
                                 "-i",
                                 interval().displayText.toLowerCase(),
+                                "-l",
+                                lowerThreshold.toString(),
+                                "-u",
+                                upperThreshold.toString(),
                             )
                             if (useAngle) {
                                 arguments.add("-a")
